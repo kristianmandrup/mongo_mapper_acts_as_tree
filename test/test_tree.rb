@@ -19,6 +19,10 @@ class TestMongomapperActsAsTree < Test::Unit::TestCase
     should "have roots" do
       assert eql_arrays?(Category.roots, [@root_1, @root_2])
     end
+    
+    should "search for roots with options" do
+      assert eql_arrays?(Category.roots({:name => "Root 1"}), [@root_1])
+    end
       
     context "node" do
       should "have a root" do

@@ -14,7 +14,8 @@ module MongoMapper
           options = {
             :parent_id_field => "parent_id",
             :path_field      => "path",
-            :depth_field     => "depth"
+            :depth_field     => "depth",
+            :base_class      => self
           }.merge(options)
           
           write_inheritable_attribute :acts_as_tree_options, options
@@ -36,8 +37,8 @@ module MongoMapper
       end
       
       module ClassMethods
-        def roots
-          self.all(parent_id_field => nil, :order => tree_order)
+        def roots options = {}
+          base_class.all({parent_id_field => nil, :order => tree_order}.merge(options))
         end
       end
       
@@ -49,7 +50,7 @@ module MongoMapper
         end
       
         def parent=(var)
-          var = self.class.find(var) if var.is_a? String
+          var = base_class.find(var) if var.is_a? String
           
           if self.descendants.include? var
             @_cyclic = true
@@ -67,6 +68,7 @@ module MongoMapper
         end
         
         def fix_position
+          # debugger
           if parent.nil?
             self[parent_id_field] = nil
             self[path_field] = []
@@ -79,7 +81,8 @@ module MongoMapper
         end
         
         def parent
-          @_parent or (self[parent_id_field].nil? ? nil : self.class.find(self[parent_id_field]))
+          # debugger
+          @_parent or (self[parent_id_field].nil? ? nil : base_class.find(self[parent_id_field]))
         end
         
         def root?
@@ -87,12 +90,12 @@ module MongoMapper
         end
         
         def root
-          self[path_field].first.nil? ? self : self.class.find(self[path_field].first)
+          self[path_field].first.nil? ? self : base_class.find(self[path_field].first)
         end
         
         def ancestors
           return [] if root?
-          self.class.find(self[path_field])
+          base_class.find(self[path_field])
         end
         
         def self_and_ancestors
@@ -100,20 +103,20 @@ module MongoMapper
         end
         
         def siblings
-          self.class.all(:_id => {"$ne" => self._id}, parent_id_field => self[parent_id_field], :order => tree_order)
+          base_class.all(:_id => {"$ne" => self._id}, parent_id_field => self[parent_id_field], :order => tree_order)
         end
         
         def self_and_siblings
-          self.class.all(parent_id_field => self[parent_id_field], :order => tree_order)
+          base_class.all(parent_id_field => self[parent_id_field], :order => tree_order)
         end
         
         def children
-          self.class.all(parent_id_field => self._id, :order => tree_order)
+          base_class.all(parent_id_field => self._id, :order => tree_order)
         end
         
         def descendants
           return [] if new_record?
-          self.class.all(path_field => self._id, :order => tree_order)
+          base_class.all(path_field => self._id, :order => tree_order)
         end
         
         def self_and_descendants
@@ -156,7 +159,7 @@ module MongoMapper
         end
         
         def destroy_descendants
-          self.class.destroy(self.descendants.map(&:_id))
+          base_class.destroy(self.descendants.map(&:_id))
         end
       end
       
@@ -175,6 +178,10 @@ module MongoMapper
         
         def tree_order
           acts_as_tree_options[:order] or ""
+        end
+        
+        def base_class
+          acts_as_tree_options[:base_class]
         end
       end
     end
