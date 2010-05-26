@@ -68,7 +68,6 @@ module MongoMapper
         end
         
         def fix_position
-          # debugger
           if parent.nil?
             self[parent_id_field] = nil
             self[path_field] = []
