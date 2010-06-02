@@ -1,5 +1,5 @@
 require "mongo_mapper"
-
+require "ruby-debug"
 module MongoMapper
   module Acts
     module Tree
@@ -33,6 +33,8 @@ module MongoMapper
           after_save      :move_children
           validate        :will_save_tree
           before_destroy  :destroy_descendants
+          
+          self.class_eval 'alias :super_parent :parent'
         end
       end
       
@@ -55,7 +57,8 @@ module MongoMapper
           if self.descendants.include? var
             @_cyclic = true
           else
-            @_parent = var
+            @_parent = var   
+            @_parent_is_nil = (var == nil ? true : false)
             fix_position
             @_will_move = true
           end
@@ -68,7 +71,7 @@ module MongoMapper
         end
         
         def fix_position
-          if parent.nil?
+          if super_parent.nil?
             self[parent_id_field] = nil
             self[path_field] = []
             self[depth_field] = 0
@@ -80,7 +83,7 @@ module MongoMapper
         end
         
         def parent
-          # debugger
+          return nil if @_parent_is_nil
           @_parent or (self[parent_id_field].nil? ? nil : base_class.find(self[parent_id_field]))
         end
         

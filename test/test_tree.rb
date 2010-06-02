@@ -147,6 +147,12 @@ class TestMongomapperActsAsTree < Test::Unit::TestCase
       should "have a parent" do
         assert_equal @child_2, @child_2_1.parent
       end
+      
+      should "be able to become root" do
+        @child_2.parent = nil
+        @child_2.save
+        assert_nil @child_2.parent
+      end
     end
   end
 end
