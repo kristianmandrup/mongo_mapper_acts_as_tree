@@ -1,5 +1,5 @@
 require "mongo_mapper"
-require "ruby-debug"
+
 module MongoMapper
   module Acts
     module Tree
